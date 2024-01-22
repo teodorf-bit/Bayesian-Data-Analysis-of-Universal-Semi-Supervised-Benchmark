@@ -1,0 +1,292 @@
+---
+title: "USB results"
+output: html_document
+date: "2023-08-23"
+---
+Clear the R enviorment
+```{r}
+rm(list = ls())
+```
+
+
+## Packages
+Import all the relevant packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(tidyr)
+library(kableExtra)
+library(stringr)
+library(rstan)
+library(patchwork)
+library(gtools)
+library(posterior)
+library(cmdstanr)
+
+```
+
+```{r, setup, include=FALSE}
+knitr::opts_knit$set(root.dir = '/home/teodor/Desktop/projects/papers/journal2/code/')
+```
+
+```{r cars}
+source("utils.R")
+```
+
+## Import dataset, remove defixmath because it is only used for task == "usb_cv", therefore it cannot be used for the aggregated results.
+```{r}
+dataset <- readr::read_csv("results/combined_csv_SD.csv") %>% dplyr::filter(seed<=9) %>%
+  dplyr::select(-c(task,label)) %>%
+  dplyr::filter(error_rate>0) %>%
+  dplyr::filter(algorithm!="defixmatch") %>%
+  dplyr::filter(algorithm!="fullysupervised")
+```
+
+```{r}
+
+bm <- get_index_names_as_array(dataset$dataset)
+algorithms <- get_index_names_as_array(dataset$algorithm)
+```
+
+## 
+
+```{r}
+y <- ifelse(dataset$error_rate<10,1,0)
+
+dataset<-dataset %>% 
+  dplyr::mutate(y=y) %>%
+  dplyr::group_by(algorithm, dataset, SD) %>%
+  dplyr::summarise(
+    solvedAt10=sum(y),
+    N=n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(algorithmID=create_index(algorithm),
+                datasetID=create_index(dataset)) %>%
+  dplyr::select(algorithm, algorithmID, dataset, datasetID, SD, N, y=solvedAt10)
+```
+
+Lets preview a sample of the data set
+```{r}
+kable(dplyr::sample_n(dataset,size=10),"html", booktabs=T, format.args = list(scientific = FALSE), digits = 3) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>% 
+  kableExtra::scroll_box(width = "100%")
+```
+
+
+```{r include=F}
+saveRDS(dplyr::sample_n(dataset,size=4),'./probsuccessmodeldata.RDS')
+```
+
+```{r}
+standata <- list(
+  N_total = nrow(dataset),
+  y = dataset$y,
+  N_draw = dataset$N,
+  x_noise = dataset$SD,
+  N_algorithm = length(algorithms),
+  algorithm_id = dataset$algorithmID,
+  N_bm  = length(bm),
+  bm_id = dataset$datasetID
+)
+saveRDS(standata,file="./probsuccess-data.RDS")
+```
+
+```{r}
+standata<-readRDS("./probsuccess-data.RDS")
+
+cmdstanr::set_cmdstan_path("/home/teodor/.cmdstan/cmdstan-2.32.2")
+file <- file.path(cmdstanr::cmdstan_path(), "probsuccess.stan")
+mod <- cmdstanr::cmdstan_model(file)
+
+probsuccess.fit <- mod$sample(
+  data = standata,
+  seed = 123,
+  chains = 4,
+  iter_warmup = 200,
+  iter_sampling = 2000,
+  parallel_chains = 4,
+  refresh = 500
+)
+
+probsuccess.fit$save_object(file = "./probsuccess-fit-aggregated.RDS")
+
+```
+
+```{r}
+np <- bayesplot::nuts_params(probsuccess.fit)
+a_alg <- c("a_alg[1]",
+           "a_alg[2]",
+           "a_alg[3]",
+           "a_alg[4]",
+           "a_alg[5]",
+           "a_alg[6]",
+           "a_alg[7]",
+           "a_alg[8]",
+           "a_alg[9]",
+           "a_alg[10]",
+           "a_alg[11]",
+           "a_alg[12]",
+           "a_alg[13]",
+           "a_alg[14]",
+           "a_alg[15]",
+           "a_alg[16]",
+           "a_alg[17]")
+b_noise <- c("b_noise[1]",
+             "b_noise[2]",
+             "b_noise[3]",
+             "b_noise[4]",
+             "b_noise[5]",
+             "b_noise[6]",
+             "b_noise[7]",
+             "b_noise[8]",
+             "b_noise[9]",
+             "b_noise[10]",
+             "b_noise[11]",
+             "b_noise[12]",
+             "b_noise[13]",
+             "b_noise[14]",
+             "b_noise[15]",
+             "b_noise[16]",
+             "b_noise[17]")
+
+csv_files <- probsuccess.fit$output_files()
+probsuccess.fit <- as_cmdstan_fit(csv_files)
+draws_a <- posterior::as_draws(probsuccess.fit$draws(variables = a_alg, format = "draws_df"))
+draws_b <- posterior::as_draws(probsuccess.fit$draws(variables = b_noise, format = "draws_df"))
+```
+Another diagnosis is to look at the Rhat. If Rhat is greater than 1.05 it indicates a divergence in the chains (they did not mix well). The table below shows a summary of the sampling.
+```{r}
+summary_probsuccess.fit <- probsuccess.fit$summary(variables = a_alg) %>%
+  dplyr::select(-mean, -median,-sd,-mad,-q5,-q95 )%>% 
+  kable(
+      "latex", 
+      table.envir = 'table',
+      caption='Diagnostics for the posterior effects (aggregated)', 
+      booktabs=T,
+      label='tab:diagnostics-aggregated-probsuccess',
+      format.args = list(scientific = FALSE), 
+      digits = 3,
+      linesep = "") %>% 
+  kable_styling(latex_options = c("hold_position"),
+                full_width = F) %>% 
+  readr::write_lines('diagnostics-probsuccess-aggregated.tex')
+```
+
+Here we are expimenting to compute the HPDintervals
+```{r}
+hpdi <- coda::HPDinterval(coda::as.mcmc(t(as.data.frame(probsuccess.fit$summary(variables = c(a_alg,b_noise))[6:7]))))
+df <- tibble::rownames_to_column(as.data.frame(hpdi), "Parameter")
+Mean <- c(probsuccess.fit$summary(variables = c(a_alg,b_noise))$mean)
+df.hpdi <- mutate(df,
+                 Mean=Mean,
+                 Parameter=probsuccess.fit$summary(variables = c(a_alg,b_noise))$variable) %>%
+  rename(HPDI.lower=lower,
+         HPDI.higher=upper,
+         Mean = Mean)
+hpdi <- df.hpdi
+hpdi_oddsratio <- df.hpdi
+hpdi_oddsratio$Mean <- exp(df.hpdi$Mean)
+hpdi_oddsratio$HPDI.lower <- exp(df.hpdi$HPDI.lower)
+hpdi_oddsratio$HPDI.higher <- exp(df.hpdi$HPDI.higher)
+```
+
+Produce tables.
+```{r}
+rename_pars <- c(
+  paste(rep('a_',length(algorithms)),algorithms, sep = ""),
+  paste(rep('b_',length(algorithms)),algorithms, sep = ""))
+
+renamepars <- rename_pars
+pars <- c(a_alg, b_noise)
+stanfit_summary <- as_tibble(probsuccess.fit$summary(variables = c(a_alg,b_noise)), rownames="Parameter")
+t1 <- stanfit_summary %>%
+  dplyr::filter(Parameter %in% pars) %>%
+  select(Parameter)
+t2 <- hpdi %>%
+  dplyr::filter(Parameter %in% pars)
+t <-left_join(x=t2, y=t1, by=c("Parameter")) %>%
+  dplyr::select(Parameter,Mean, everything()) %>%
+  dplyr::mutate(Parameter=renamepars)
+tt<- t %>% 
+  mutate('OR Mean' = exp(Mean),
+         'OR HPD low' = exp(HPDI.lower),
+         'OR HPD high' = exp(HPDI.higher))
+colnames(tt) <- c("Parameter", "Mean", "HPD low", "HPD high",'OR Mean','OR HPD low','OR HPD high')
+
+ saveRDS(tt,'./probsuccess-par-table-aggregated.RDS')
+```
+
+Create table for the ODDs ratios
+```{r}
+tt[c(1:34),c(1,5:7)] %>%
+kable(
+        "latex", 
+        table.envir = 'table',
+        caption='Odds ratios for fixed effects and noise parameters for aggregated data', 
+        booktabs=T,
+        label='summarystatisticstable-OR-aggregated',
+        format.args = list(scientific = FALSE), 
+        digits = 3,
+        linesep = "") %>% 
+    kable_styling(latex_options = c("hold_position"),
+                  full_width = F) %>% 
+    readr::write_lines('summarystatisticstable-OR-aggregated.tex')
+```
+
+Statistical Analysis
+```{r}
+p_trace <- bayesplot::mcmc_trace(draws_a, pars = a_alg)
+png("traceplots-probsuccess-aggregated.png")
+p_trace
+```
+
+Scatterplots for MCMC
+```{r}
+# p_mcmc_scatter <- bayesplot::mcmc_scatter(probsuccess.fit$draws(variables=c("a_alg[1]","a_alg[2]"),format = "draws_df"))
+# p_mcmc_scatter
+```
+
+```{r}
+# p_mcmc_intervals<-bayesplot::mcmc_intervals(draws_a) +
+#   scale_y_discrete(labels=algorithms)+
+#   labs(x="Estimate",
+#        y="Algorithm",
+#        title="HPD Intervals for the parameters")
+# png("strenght-aggregated.png")
+# p_mcmc_intervals
+```
+ Sample from the posterior
+```{r}
+y <- standata$y
+y_rep <- posterior::as_draws(probsuccess.fit$draws(variables = "y_rep", format = "draws_df"))
+y_rep <- y_rep[,1:length(y)]
+```
+Kernel density plots
+```{r}
+# p_dense_overlay <- bayesplot::ppc_dens_overlay(y,as.matrix(y_rep))
+# png("dense_overlay-aggregated.png")
+```
+
+
+Histograms of skew(y_rep)
+```{r}
+# p_bars_stat <- bayesplot::ppc_stat(y, as.matrix(y_rep), binwidth=0.005)
+# png("stat-aggregated.png")
+# p_bars_stat
+```
+
+```{r}
+# p_areas <- bayesplot::mcmc_areas(draws_a, prob=0.8)
+# png("posterior-parameters-areas.png")
+# p_areas
+```
+
+```{r}
+p_bars_stat_grouped <- bayesplot::ppc_stat_grouped(y=y, yrep=as.matrix(y_rep), group = dataset$algorithm, binwidth = 0.005)
+png("posterior-parameters-grouped-aggregated-probsuccess.png")
+p_bars_stat_grouped
+```
+
+

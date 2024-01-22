@@ -1,0 +1,263 @@
+---
+title: "USB results"
+output: html_document
+date: "2023-08-23"
+---
+Clear the R enviorment
+```{r}
+rm(list = ls())
+```
+
+
+## Packages
+Import all the relevant packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(tidyr)
+library(kableExtra)
+library(stringr)
+library(rstan)
+library(patchwork)
+library(gtools)
+library(posterior)
+library(cmdstanr)
+
+```
+
+```{r, setup, include=FALSE}
+knitr::opts_knit$set(root.dir = '/home/teodor/Desktop/research/USB/')
+```
+
+```{r cars}
+source("utils.R")
+```
+
+## Import dataset, remove defixmath because it is only used for task == "usb_cv", therefore it cannot be used for the aggregated results.
+```{r}
+dataset <- readr::read_csv("results/combined_csv_SD.csv") %>% dplyr::filter(seed<=9) %>%
+  dplyr::select(-c(task,label)) %>%
+  dplyr::filter(error_rate>0) %>%
+  dplyr::filter(algorithm!="defixmatch")
+```
+
+```{r}
+
+bm <- get_index_names_as_array(dataset$dataset)
+algorithms <- get_index_names_as_array(dataset$algorithm)
+```
+
+## 
+
+```{r}
+y <- ifelse(dataset$error_rate<10,1,0)
+
+dataset<-dataset %>% 
+  dplyr::mutate(y=y) %>%
+  dplyr::group_by(algorithm, dataset, SD) %>%
+  dplyr::summarise(
+    solvedAt10=sum(y),
+    N=n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(algorithmID=create_index(algorithm),
+                datasetID=create_index(dataset)) %>%
+  dplyr::select(algorithm, algorithmID, dataset, datasetID, SD, N, y=solvedAt10)
+```
+
+Lets preview a sample of the data set
+```{r}
+kable(dplyr::sample_n(dataset,size=10),"html", booktabs=T, format.args = list(scientific = FALSE), digits = 3) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>% 
+  kableExtra::scroll_box(width = "100%")
+```
+
+
+```{r include=F}
+saveRDS(dplyr::sample_n(dataset,size=4),'./probsuccessmodeldata.RDS')
+```
+
+```{r}
+standata <- list(
+  N_total = nrow(dataset),
+  y = dataset$y,
+  N_draw = dataset$N,
+  x_noise = dataset$SD,
+  N_algorithm = length(algorithms),
+  algorithm_id = dataset$algorithmID,
+  N_bm  = length(bm),
+  bm_id = dataset$datasetID
+)
+saveRDS(standata,file="./probsuccess-data.RDS")
+```
+
+```{r}
+standata<-readRDS("./probsuccess-data.RDS")
+probsuccess.fit <- stan(file = './probsuccess.stan',
+                     data=standata,
+                     chains = 4,
+                     warmup = 200,
+                     iter = 3000)
+saveRDS(probsuccess.fit, file = "./probsuccsess-fit.RDS")
+```
+```{r}
+probsuccess.fit <-readRDS("./probsuccsess-fit.RDS")
+```
+
+```{r}
+summary(probsuccess.fit)$summary
+```
+P
+```{r}
+a_alg <- c("a_alg[1]",
+           "a_alg[2]",
+           "a_alg[3]",
+           "a_alg[4]",
+           "a_alg[5]",
+           "a_alg[6]",
+           "a_alg[7]",
+           "a_alg[8]",
+           "a_alg[9]",
+           "a_alg[10]",
+           "a_alg[11]",
+           "a_alg[12]",
+           "a_alg[13]",
+           "a_alg[14]",
+           "a_alg[15]",
+           "a_alg[16]",
+           "a_alg[17]",
+           "a_alg[18]")
+b_noise <- c("b_noise[1]",
+             "b_noise[2]",
+             "b_noise[3]",
+             "b_noise[4]",
+             "b_noise[5]",
+             "b_noise[6]",
+             "b_noise[7]",
+             "b_noise[8]",
+             "b_noise[9]",
+             "b_noise[10]",
+             "b_noise[11]",
+             "b_noise[12]",
+             "b_noise[13]",
+             "b_noise[14]",
+             "b_noise[15]",
+             "b_noise[16]",
+             "b_noise[17]",
+             "b_noise[18]")
+rstan::traceplot(probsuccess.fit, pars=a_alg)
+rstan::traceplot(probsuccess.fit, pars=b_noise)
+rstan::traceplot(probsuccess.fit, pars=c('s'))
+```
+Another diagnosis is to look at the Rhat. If Rhat is greater than 1.05 it indicates a divergence in the chains (they did not mix well). The table below shows a summary of the sampling.
+```{r}
+kable(summary(probsuccess.fit)$summary) %>% 
+  kable_styling(bootstrap_options = c('striped',"hover", "condensed" )) %>% 
+  kableExtra::scroll_box(width = "100%")
+```
+First lets get the HPDI of every parameter. We do this with the helper function from utils.R. But the function is quite simple. It just converts the stanmodel object to an object that the coda package can read (and do some renaming). Alternatively we can use the HDInterval package.
+
+Then we restrict to the algorithms, them to the slopes, then to the other parameters. We create different data frames that we use to plot with ggplot pointrange
+```{r}
+hpdi <- get_HPDI_from_stanfit(probsuccess.fit)
+hpdi_oddsratio <- hpdi
+hpdi_oddsratio$Mean <- exp(hpdi$Mean)
+hpdi_oddsratio$HPDI.lower <- exp(hpdi$HPDI.lower)
+hpdi_oddsratio$HPDI.higher <- exp(hpdi$HPDI.higher)
+
+
+hpdi_oddsratio_algorithm <- hpdi_oddsratio %>% 
+      dplyr::filter(str_detect(Parameter, "a_alg\\[")) %>%
+      dplyr::mutate(Parameter=algorithms) #Changing to the algorithms labels
+
+hpdi_oddsratio_b_noise <- hpdi_oddsratio %>% 
+      dplyr::filter(str_detect(Parameter, "b_noise\\[")) %>%
+      dplyr::mutate(Parameter=algorithms) #Changing to the algorithms labels
+
+hpdi_s <- hpdi %>% 
+      dplyr::filter(Parameter=='s') 
+
+
+p_alg<-ggplot(data=hpdi_oddsratio_algorithm, aes(x=Parameter))+
+  geom_pointrange(aes(
+    ymin=HPDI.lower, 
+    ymax=HPDI.higher, 
+    y=Mean))+
+  labs(y="Odds ratio for intercept", x="Algorithm")+
+  coord_flip()
+p_alg + plot_annotation(title = 'HPDI interval for the algorithms OR')
+
+p_noise <- ggplot(data=hpdi_oddsratio_b_noise, aes(x=Parameter))+
+  geom_pointrange(aes(
+    ymin=HPDI.lower, 
+    ymax=HPDI.higher, 
+    y=Mean))+
+  labs( y="Odds ratio for b_noise", x="Parameter")+
+  coord_flip()+
+  theme()
+p_noise + plot_annotation(title = 'HPDI interval for the noise coefficients OR')
+
+# p_s <- ggplot(data=hpdi_s, aes(x=Parameter))+
+#   geom_pointrange(aes(
+#     ymin=HPDI.lower, 
+#     ymax=HPDI.higher, 
+#     y=Mean))+
+#   labs(y="s", x="Parameter")+
+#   coord_flip()
+# p_s + plot_annotation(title = 'HPDI interval for s')
+```
+
+```{r echo=F, include=F, eval=T}
+#figure for the paper
+#p<- (p_alg | p_noise | p_s) + plot_annotation(title = 'HPDI interval')
+p <- p_noise + plot_annotation(title = "HPDI interval#")
+save_fig(p, './probsuccess-oddsratio.pdf')
+```
+
+
+Creating an output table
+```{r}
+rename_pars <- c(
+  paste(rep('a_',length(algorithms)),algorithms, sep = ""),
+  paste(rep('b_',length(algorithms)),algorithms, sep = ""),
+  's')
+
+t<-create_table_model(probsuccess.fit, pars = c(a_alg, b_noise, 's'), renamepars =  rename_pars)
+renamepars <- rename_pars
+pars <- c(a_alg, b_noise, 's')
+stanfit_summary <- as_tibble(summary(probsuccess.fit)$summary, rownames="Parameter")
+t1 <- stanfit_summary %>%
+  dplyr::filter(Parameter %in% pars) %>%
+  select(Parameter)
+t2 <- hpdi %>%
+  dplyr::filter(Parameter %in% pars)
+t <-left_join(x=t2, y=t1, by=c("Parameter")) %>%
+  dplyr::select(Parameter,Mean, everything()) %>%
+  dplyr::mutate(Parameter=renamepars)
+tt<- t %>% 
+  mutate('OR Mean' = exp(Mean),
+         'OR HPD low' = exp(HPDI.lower),
+         'OR HPD high' = exp(HPDI.higher))
+colnames(t)<-c("Parameter", "Mean", "HPD low", "HPD high","\\hat{R}","$n_{eff}$",'OR Mean','OR low','OR HPD high')
+# 
+# saveRDS(t,'./probsuccess-par-table.RDS')
+```
+Create table for the ODDs ratios
+```{r}
+t[c(1:18),c(1,7:9)] %>%
+kable(
+        "latex", 
+        table.envir = 'table',
+        caption='  ', 
+        booktabs=T,
+        label='summarystatisticstable-OR-aggregated',
+        format.args = list(scientific = FALSE), 
+        digits = 3,
+        linesep = "") %>% 
+    kable_styling(latex_options = c("hold_position"),
+                  full_width = F) %>% 
+    readr::write_lines('summarystatisticstable-OR-aggregated.tex')
+```
+
+

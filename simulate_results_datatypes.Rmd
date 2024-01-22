@@ -1,0 +1,80 @@
+---
+title: "USB results"
+output: html_document
+date: "2023-08-23"
+---
+Clear the R enviorment
+```{r}
+rm(list = ls())
+```
+
+
+## Packages
+Import all the relevant packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(tidyr)
+library(kableExtra)
+library(stringr)
+library(rstan)
+library(patchwork)
+library(gtools)
+library(posterior)
+library(cmdstanr)
+
+```
+
+```{r, setup, include=FALSE}
+knitr::opts_knit$set(root.dir = '/home/teodor/Desktop/research/USB/')
+```
+
+```{r cars}
+source("utils.R")
+```
+
+## Import dataset, remove defixmath because it is only used for task == "usb_cv", therefore it cannot be used for the aggregated results.
+```{r}
+dataset <- readr::read_csv("results/combined_csv.csv") %>% dplyr::filter(seed<=9) %>%
+  dplyr::filter(error_rate>0) %>%
+  dplyr::filter(algorithm!="defixmatch")
+```
+
+## Summary statistics for the error rate
+```{r}
+dataset%>% 
+  dplyr::group_by(algorithm) %>% 
+  summarise("Median" = median(error_rate),
+            "5%" = quantile(error_rate, 0.05),
+            "95%" = quantile(error_rate, 0.95),
+            "Range" = quantile(error_rate, 0.95) - quantile(error_rate, 0.05),
+            groups=task) %>% 
+  dplyr::ungroup() %>% 
+  kable(
+        "latex", 
+        table.envir = 'table',
+        caption='Summary statistics for the computation error rate for aggregated data', 
+        booktabs=T,
+        label='summarystatisticstable',
+        format.args = list(scientific = FALSE), 
+        digits = 3,
+        linesep = "") %>% 
+    kable_styling(latex_options = c("hold_position"),
+                  full_width = F) %>% 
+    readr::write_lines('summarystatisticstable-error-rate-datatype.tex')
+```
+
+## Summary statistics but as boxplots
+```{r}
+p<-ggplot(data=dataset, aes(x=algorithm, y=error_rate, fill=algorithm))+
+  geom_boxplot()+
+  theme(axis.text.x = element_blank())+ #remove the x labels
+  labs(title = 'error_rate (all datasets)')+
+  facet_wrap(~task)
+pdf("boxplots-error-rate-datatype.pdf")
+#png("boxplots-error-rate.png")
+p
+
+```
