@@ -164,7 +164,7 @@ summary_probsuccess.fit <- probsuccess.fit$summary(variables = a_alg) %>%
   kable(
       "latex", 
       table.envir = 'table',
-      caption='Diagnostics for the posterior effects (large allocation)', 
+      caption='Diagnostics for the posterior effects (large allocation of labels)', 
       booktabs=T,
       label='tab:diagnostics-large-probsuccess',
       format.args = list(scientific = FALSE), 
@@ -228,7 +228,7 @@ tt[c(1:34),c(1,5:7)] %>%
 kable(
         "latex", 
         table.envir = 'table',
-        caption='Odds ratios for fixed effects and noise parameters for large allocation of labels', 
+        caption='Odds ratios for fixed effects and noise parameters (large allocation of labels)', 
         booktabs=T,
         label='summarystatisticstable-OR-large',
         format.args = list(scientific = FALSE), 

@@ -57,7 +57,7 @@ dataset%>%
   kable(
         "latex", 
         table.envir = 'table',
-        caption='Summary statistics for the computation error rate for the data when having a small allocation of labels', 
+        caption='Summary statistics for the error rate (small allocation of labels)', 
         booktabs=T,
         label='summarystatisticstable-small',
         format.args = list(scientific = FALSE), 
@@ -95,7 +95,7 @@ dataset %>%
   kable(
         "latex", 
         table.envir = 'table',
-        caption='Summary statistics for the error_rate for small data', 
+        caption='Summary statistics for the error_rate (small allocation of labels)', 
         booktabs=T,
         label='summarystatisticstable-small',
         format.args = list(scientific = FALSE), 
@@ -243,7 +243,7 @@ summary_ranking.fit <- ranking.fit$summary(variables = a_alg) %>%
   kable(
       "latex", 
       table.envir = 'table',
-      caption='Diagnostics for the posterior ranks (small allocation)', 
+      caption='Diagnostics for the posterior ranks (small allocation of labels)', 
       booktabs=T,
       label='tab:diagnostics-small',
       format.args = list(scientific = FALSE), 
@@ -403,7 +403,7 @@ rank_df_table %>%
   kable(
       "latex", 
       table.envir = 'table',
-      caption='Ranking of the algorithms for small allocation of labeled data', 
+      caption='Ranking of the algorithms (small allocation of labeled data)', 
       booktabs=T,
       label='rankingsmall',
       format.args = list(scientific = FALSE), 

@@ -232,7 +232,7 @@ tt[c(1:34),c(1,5:7)] %>%
 kable(
         "latex", 
         table.envir = 'table',
-        caption='Odds ratios for fixed effects and noise parameters for text data', 
+        caption='Odds ratios for fixed effects and noise parameters (text data)', 
         booktabs=T,
         label='summarystatisticstable-OR-nlp',
         format.args = list(scientific = FALSE), 

@@ -56,7 +56,7 @@ dataset%>%
   kable(
         "latex", 
         table.envir = 'table',
-        caption='Summary statistics for the computation error rate for usb-audio data', 
+        caption='Summary statistics for the error rate (audio data)', 
         booktabs=T,
         label='summarystatisticstable',
         format.args = list(scientific = FALSE), 
@@ -94,7 +94,7 @@ dataset %>%
   kable(
         "latex", 
         table.envir = 'table',
-        caption='Summary statistics for the error_rate for usb-audio data', 
+        caption='Summary statistics for the error_rate (audio data)', 
         booktabs=T,
         label='summarystatisticstable-usb-audio',
         format.args = list(scientific = FALSE), 
@@ -253,46 +253,46 @@ summary_ranking.fit <- ranking.fit$summary(variables = a_alg) %>%
   readr::write_lines('diagnostics-usb-audio.tex')
 ```
 
-Statistical Analysis
-```{r}
+<!-- Statistical Analysis -->
+<!-- ```{r} -->
 
-p_trace <- bayesplot::mcmc_trace(draws_a, pars=a_alg)
-#pdf("traceplots-10.pdf")
-png("traceplots-usb-audio.png")
-p_trace
-```
+<!-- p_trace <- bayesplot::mcmc_trace(draws_a, pars=a_alg) -->
+<!-- #pdf("traceplots-10.pdf") -->
+<!-- png("traceplots-usb-audio.png") -->
+<!-- p_trace -->
+<!-- ``` -->
 
-Scatterplots
-```{r}
-p_mcmc_scatter <- bayesplot::mcmc_scatter(ranking.fit$draws(variables = c("a_alg[1]","a_alg[2]"),format = "draws_df"))
-```
+<!-- Scatterplots -->
+<!-- ```{r} -->
+<!-- p_mcmc_scatter <- bayesplot::mcmc_scatter(ranking.fit$draws(variables = c("a_alg[1]","a_alg[2]"),format = "draws_df")) -->
+<!-- ``` -->
 
-Scatterplots mcmc_pairs instead of mcmc:scatter.
-```{r}
-draws_a_1 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[1]","a_alg[2]","a_alg[3]"), format = "draws_df"))
-draws_a_2 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[4]","a_alg[5]","a_alg[6]"), format = "draws_df"))
-draws_a_3 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[7]","a_alg[8]","a_alg[9]"), format = "draws_df"))
-draws_a_4 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[10]","a_alg[11]","a_alg[12]"), format = "draws_df"))
-draws_a_5 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[13]","a_alg[14]","a_alg[15]"), format = "draws_df"))
-draws_a_5 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[16]","a_alg[17]"), format = "draws_df"))
-
-
+<!-- Scatterplots mcmc_pairs instead of mcmc:scatter. -->
+<!-- ```{r} -->
+<!-- draws_a_1 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[1]","a_alg[2]","a_alg[3]"), format = "draws_df")) -->
+<!-- draws_a_2 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[4]","a_alg[5]","a_alg[6]"), format = "draws_df")) -->
+<!-- draws_a_3 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[7]","a_alg[8]","a_alg[9]"), format = "draws_df")) -->
+<!-- draws_a_4 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[10]","a_alg[11]","a_alg[12]"), format = "draws_df")) -->
+<!-- draws_a_5 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[13]","a_alg[14]","a_alg[15]"), format = "draws_df")) -->
+<!-- draws_a_5 <- posterior::as_draws(ranking.fit$draws(variables = c("a_alg[16]","a_alg[17]"), format = "draws_df")) -->
 
 
-p_mcmc_pairs_1 <- bayesplot::mcmc_pairs(draws_a_1, np=np)
-p_mcmc_pairs_2 <- bayesplot::mcmc_pairs(draws_a_2, np=np)
-p_mcmc_pairs_3 <- bayesplot::mcmc_pairs(draws_a_3, np=np)
-p_mcmc_pairs_4 <- bayesplot::mcmc_pairs(draws_a_4, np=np)
-p_mcmc_pairs_5 <- bayesplot::mcmc_pairs(draws_a_5, np=np)
-pdf("scatter-usb-audio.pdf")
 
 
-p_mcmc_pairs_1
-p_mcmc_pairs_2
-p_mcmc_pairs_3
-p_mcmc_pairs_4
-p_mcmc_pairs_5
-```
+<!-- p_mcmc_pairs_1 <- bayesplot::mcmc_pairs(draws_a_1, np=np) -->
+<!-- p_mcmc_pairs_2 <- bayesplot::mcmc_pairs(draws_a_2, np=np) -->
+<!-- p_mcmc_pairs_3 <- bayesplot::mcmc_pairs(draws_a_3, np=np) -->
+<!-- p_mcmc_pairs_4 <- bayesplot::mcmc_pairs(draws_a_4, np=np) -->
+<!-- p_mcmc_pairs_5 <- bayesplot::mcmc_pairs(draws_a_5, np=np) -->
+<!-- pdf("scatter-usb-audio.pdf") -->
+
+
+<!-- p_mcmc_pairs_1 -->
+<!-- p_mcmc_pairs_2 -->
+<!-- p_mcmc_pairs_3 -->
+<!-- p_mcmc_pairs_4 -->
+<!-- p_mcmc_pairs_5 -->
+<!-- ``` -->
 
 ```{r}
 y <- df_out$y
@@ -302,27 +302,27 @@ y_rep <- y_rep[,1:length(y)]
 #launch_shinystan(ranking.fit)
 ```
 
-Parplots
-```{r}
-p_parcoord <- bayesplot::mcmc_parcoord(draws_a)
-#pdf("parcoord-usb-audio.pdf")
-png("parcoord-usb-audio.png")
-p_parcoord
-```
-Kernel density estimates
-```{r}
-p_dense_overlay <-bayesplot::ppc_dens_overlay(y,as.matrix(y_rep))
-#pdf("dense_overlay-usb-audio.pdf")
-png("dense_overlay-usb-audio.png")
-p_dense_overlay
-```
-Hisograms of skew(y_rep)
-```{r}
-p_ppc_stat <- bayesplot::ppc_stat(y, as.matrix(y_rep), binwidth = 0.005)
-#pdf('stat-usb-audio.pdf')
-png("stat-usb-audio.png")
-p_ppc_stat
-```
+<!-- Parplots -->
+<!-- ```{r} -->
+<!-- p_parcoord <- bayesplot::mcmc_parcoord(draws_a) -->
+<!-- #pdf("parcoord-usb-audio.pdf") -->
+<!-- png("parcoord-usb-audio.png") -->
+<!-- p_parcoord -->
+<!-- ``` -->
+<!-- Kernel density estimates -->
+<!-- ```{r} -->
+<!-- p_dense_overlay <-bayesplot::ppc_dens_overlay(y,as.matrix(y_rep)) -->
+<!-- #pdf("dense_overlay-usb-audio.pdf") -->
+<!-- png("dense_overlay-usb-audio.png") -->
+<!-- p_dense_overlay -->
+<!-- ``` -->
+<!-- Hisograms of skew(y_rep) -->
+<!-- ```{r} -->
+<!-- p_ppc_stat <- bayesplot::ppc_stat(y, as.matrix(y_rep), binwidth = 0.005) -->
+<!-- #pdf('stat-usb-audio.pdf') -->
+<!-- png("stat-usb-audio.png") -->
+<!-- p_ppc_stat -->
+<!-- ``` -->
 ## Results
 
 ```{r}
@@ -338,36 +338,35 @@ p_mcmc_intervals
 POSTERIOR PREDICTIVE CHECKS
 
 Posterior distribution of a_alg
-```{r}
-p_areas<-bayesplot::mcmc_areas(draws_a, prob = 0.8)
-#pdf('posterior-strength-parameters-usb-audio.pdf')
-png("posterior-strength-parameters-usb-audio.png")
-p_areas
-```
+# ```{r}
+# p_areas<-bayesplot::mcmc_areas(draws_a, prob = 0.8)
+# #pdf('posterior-strength-parameters-usb-audio.pdf')
+# png("posterior-strength-parameters-usb-audio.png")
+# p_areas
+# ```
+# 
+# ```{r}
+# p_bars <- bayesplot::ppc_bars(y=y,yrep=as.matrix(y_rep))
+# #pdf('posterior-predictive-check-boxplot-usb-audio.pdf')
+# png("posterior-predictive-check-boxplot-usb-audio.png")
+# p_bars
+# ```
 
-```{r}
-p_bars <- bayesplot::ppc_bars(y=y,yrep=as.matrix(y_rep))
-#pdf('posterior-predictive-check-boxplot-usb-audio.pdf')
-png("posterior-predictive-check-boxplot-usb-audio.png")
-p_bars
-```
+# ```{r}
+# p_bars_grouped <- bayesplot::ppc_stat_grouped(y=y, yrep=as.matrix(y_rep), group=df_out$algo0_name, binwidth = 0.005)
+# #pdf('posterior-predictive-check-bars_grouped-usb-audio.pdf')
+# png("posterior-predictive-check-bars_grouped-usb-audio.png")
+# p_bars_grouped
+# 
+# ```
 
-```{r}
-p_bars_grouped <- bayesplot::ppc_stat_grouped(y=y, yrep=as.matrix(y_rep), group=df_out$algo0_name, binwidth = 0.005)
-#pdf('posterior-predictive-check-bars_grouped-usb-audio.pdf')
-png("posterior-predictive-check-bars_grouped-usb-audio.png")
-p_bars_grouped
-
-```
-
-````{r}
-p_rootogram <- bayesplot::ppc_rootogram(y=y,yrep=as.matrix(y_rep))
-#pdf('posterior-predictive-check-rootogram-usb-audio.pdf')
-png("posterior-predictive-check-rootogran.usb-audio.png")
-p_rootogram
-
-```
- 
+# ````{r}
+# p_rootogram <- bayesplot::ppc_rootogram(y=y,yrep=as.matrix(y_rep))
+# #pdf('posterior-predictive-check-rootogram-usb-audio.pdf')
+# png("posterior-predictive-check-rootogran.usb-audio.png")
+# p_rootogram
+# 
+# ```
 
 
 Here we are extracting all samples and ranking them to have a distribution of the ranks
@@ -402,7 +401,7 @@ rank_df_table %>%
   kable(
       "latex", 
       table.envir = 'table',
-      caption='Ranking of the algorithms w.r.t audio data', 
+      caption='Ranking of the algorithms (audio data)', 
       booktabs=T,
       label='rankingusb-audio',
       format.args = list(scientific = FALSE), 

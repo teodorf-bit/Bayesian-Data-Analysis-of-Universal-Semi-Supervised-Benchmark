@@ -163,7 +163,7 @@ summary_probsuccess.fit <- probsuccess.fit$summary(variables = a_alg) %>%
   kable(
       "latex", 
       table.envir = 'table',
-      caption='Diagnostics for the posterior effects (aggregated)', 
+      caption='Diagnostics for the posterior effects (aggregated data)', 
       booktabs=T,
       label='tab:diagnostics-aggregated-probsuccess',
       format.args = list(scientific = FALSE), 
@@ -224,7 +224,7 @@ tt[c(1:34),c(1,5:7)] %>%
 kable(
         "latex", 
         table.envir = 'table',
-        caption='Odds ratios for fixed effects and noise parameters for aggregated data', 
+        caption='Odds ratios for fixed effects and noise parameters (aggregated data)', 
         booktabs=T,
         label='summarystatisticstable-OR-aggregated',
         format.args = list(scientific = FALSE), 

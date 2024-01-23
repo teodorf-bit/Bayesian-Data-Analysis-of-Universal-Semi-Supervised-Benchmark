@@ -231,7 +231,7 @@ tt[c(1:34),c(1,5:7)] %>%
 kable(
         "latex", 
         table.envir = 'table',
-        caption='Odds ratios for fixed effects and noise parameters for audio data', 
+        caption='Odds ratios for fixed effects and noise parameters (audio data)', 
         booktabs=T,
         label='summarystatisticstable-OR-audio',
         format.args = list(scientific = FALSE), 

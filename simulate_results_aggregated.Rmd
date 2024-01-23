@@ -118,7 +118,7 @@ dataset %>%
   kable(
         "latex", 
         table.envir = 'table',
-        caption='Summary statistics for the error_rate for aggregated data', 
+        caption='Summary statistics for the error rate (aggregated data)', 
         booktabs=T,
         label='summarystatisticstable-aggregated',
         format.args = list(scientific = FALSE), 
@@ -426,7 +426,7 @@ rank_df_table %>%
   kable(
       "latex", 
       table.envir = 'table',
-      caption='Ranking of the algorithms w.r.t aggregated data', 
+      caption='Ranking of the algorithms (aggregated data)', 
       booktabs=T,
       label='rankingaggregated',
       format.args = list(scientific = FALSE), 

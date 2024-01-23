@@ -57,7 +57,7 @@ dataset%>%
   kable(
         "latex", 
         table.envir = 'table',
-        caption='Summary statistics for the computation error rate for the data when having a large allocation of labels', 
+        caption='Summary statistics for the error rate (large allocation of labels)', 
         booktabs=T,
         label='summarystatisticstable-large',
         format.args = list(scientific = FALSE), 
@@ -95,7 +95,7 @@ dataset %>%
   kable(
         "latex", 
         table.envir = 'table',
-        caption='Summary statistics for the error_rate for large data', 
+        caption='Summary statistics for the error_rate (large allocation of labels)', 
         booktabs=T,
         label='summarystatisticstable-large',
         format.args = list(scientific = FALSE), 
@@ -241,7 +241,7 @@ summary_ranking.fit <- ranking.fit$summary(variables = a_alg) %>%
   kable(
       "latex", 
       table.envir = 'table',
-      caption='Diagnostics for the posterior ranks (large allocation)', 
+      caption='Diagnostics for the posterior ranks (large allocation of labels)', 
       booktabs=T,
       label='tab:diagnostics-large',
       format.args = list(scientific = FALSE), 
@@ -401,7 +401,7 @@ rank_df_table %>%
   kable( 
       "latex", 
       table.envir = 'table',
-      caption='Ranking of the algorithms for large allocation of labeled data', 
+      caption='Ranking of the algorithms (large allocation of labeled data)', 
       booktabs=T,
       label='rankinglarge',
       format.args = list(scientific = FALSE), 
